@@ -1,3 +1,4 @@
+import {validatePlan as growthValidate,result as growthResult} from './clinic-growth.mjs';
 export const visitColumns=['Дата','Врач','Специальность','План приёмов','Записи вчера вечером','Записи утром','Проведено приёмов'];
 export const referralColumns=['Дата','Врач направивший','Направление','Направлено','Записалось','Дошло'];
 export const pct=(a,b)=>b>0?100*a/b:null;
@@ -13,12 +14,6 @@ export function visitsMatrix(rows){return [visitColumns,...rows.map(r=>[r.date,r
 export function referralsMatrix(rows){return [referralColumns,...rows.map(r=>[r.date,r.doctor,r.destination,r.issued,r.booked,r.attended])];}
 export function demoData(){const docs=[['Анна Смирнова','Терапевт',18],['Михаил Волков','Кардиолог',14],['Елена Соколова','Невролог',16],['Дмитрий Орлов','Хирург',12],['Ольга Морозова','Эндокринолог',14],['Сергей Лебедев','Гастроэнтеролог',16]];const visits=[],referrals=[];for(let d=1;d<=9;d++){const date=`2026-11-${String(d).padStart(2,'0')}`;docs.forEach(([doctor,specialty,plan],i)=>{const morning=Math.max(3,Math.round(plan*(.51+((d*3+i*5)%10)*.045)));visits.push({date,doctor,specialty,plan,evening:Math.max(0,morning-1-(i+d)%3),morning,completed:d===9?null:Math.max(0,morning-((d+i)%3))});const issued=3+(d+i)%5,booked=issued-1-(i%2),attended=Math.max(0,booked-1-(d===9?1:0));referrals.push({date,doctor,destination:['УЗИ','Кардиология','Лабораторная диагностика','Неврология','Гастроэнтерология','Эндокринология'][i],issued,booked,attended});});}return{visits,referrals,referralPlans:docs.map(([doctor],i)=>({id:'demo-plan-'+i,from:'2026-11-01',to:'2026-11-09',doctor,destination:['УЗИ','Кардиология','Лабораторная диагностика','Неврология','Гастроэнтерология','Эндокринология'][i],target:[50,40,55,50,40,60][i]}))};}
 
-export function validateReferralPlan(input,plans=[],editingId=null){
- const p={id:input.id||editingId||crypto.randomUUID(),from:dateValue(input.from),to:dateValue(input.to),doctor:str(input.doctor,'Направивший врач'),destination:str(input.destination,'Направление'),target:num(input.target,'План направлений')};
- if(p.from>p.to)throw Error('Конец периода должен быть не раньше начала.');
- if(p.target===0)throw Error('План должен быть больше нуля.');
- if(plans.some(x=>x.id!==editingId&&x.doctor===p.doctor&&x.destination===p.destination&&x.from<=p.to&&x.to>=p.from))throw Error('Для этого врача и направления уже есть план на пересекающийся период. Измените существующий план.');
- return p;
-}
-export function referralPlanResult(plan,rows){const matching=rows.filter(r=>r.doctor===plan.doctor&&r.destination===plan.destination&&r.date>=plan.from&&r.date<=plan.to);const actual=matching.length?matching.reduce((s,r)=>s+r.issued,0):null;return{...plan,actual,completion:actual===null?null:pct(actual,plan.target),remaining:actual===null?null:Math.max(0,plan.target-actual),delta:actual===null?null:actual-plan.target};}
+export function validateReferralPlan(input,plans=[],editingId=null){return growthValidate(input,plans,editingId);}
+export function referralPlanResult(plan,rows,dailyFacts=[],closedThrough=plan.to){return growthResult(plan,rows,dailyFacts,closedThrough);}
 export function referralPlansMatrix(plans,rows){return[['Период с','Период по','Врач направивший','Направление','План направлений','Факт направлений','Выполнение, %','Осталось'],...plans.map(p=>{const r=referralPlanResult(p,rows);return[p.from,p.to,p.doctor,p.destination,p.target,r.actual??'',r.completion??'',r.remaining??''];})];}
