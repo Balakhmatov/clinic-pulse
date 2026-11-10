@@ -1,5 +1,5 @@
-import {dailyOpportunity,windowOpportunity,clientHistory,moneyGoal,masterRanking} from './growth.mjs';
-import * as C from './core.mjs';
+import {dailyOpportunity,windowOpportunity,clientHistory,moneyGoal,masterRanking} from './growth.mjs?v=20261110-clear';
+import * as C from './core.mjs?v=20261110-clear';
 import {workbook,download} from '../workbook.js';
 import {readFile} from '../file-reader.js';
 let data=C.demoData(),page='overview',selectedWindow='',selectedService='',windowDate=data.asOf,windowMaster='',actingAdmin='a1';
